@@ -2,12 +2,21 @@
 #include <string.h>
 #define int_size 31;
 
+
+/*
+Next steps:
+- put gates in an array
+
+*/
+
+
+
+
 int get_bit(int, int);
 int operate(int, int, char);
 void print_bin(int);
 
 int main(){
-
 
 struct Link{
   int * element;
@@ -59,7 +68,8 @@ void compute_gate(struct Gate a_gate){
   int y = get_bit(*a_gate.in2.element, a_gate.in2.tap);
   int z = operate(x, y, a_gate.type);
   z = z<<a_gate.out.tap;
-  * a_gate.out.element = (*a_gate.out.element | z);
+  * a_gate.out.element = (*a_gate.out.element | z); //maybe this shouldn't be an OR gate...just equals?
+                                                    //so right-most inlet is always dominant?
 }
 
 void print_bin(int reg){
@@ -84,9 +94,9 @@ void print_gate_state(struct Gate a_gate){
   printf("out tap: %i\n", a_gate.out.tap);
 }
 
-for (int i=0;i<100;i++){
+for (int i=0;i<1000;i++){
   print_bin(Reg1);
-  printf("%i\n",Reg1);
+  //printf("%i\n",Reg1);
   Reg1 = Reg1>>1;
   compute_gate(Gate1);
 }
