@@ -160,11 +160,11 @@ static int patestCallback( const void *inputBuffer, void *outputBuffer,
       }
 
         float something = (((float) *data->reg_ptr/4294967295) - 0.5) * 2.0;
-        printf("%f\n", something);
+        //printf("%f\n", something);
 
         /* Stereo - two channels. */
-        *out++ = something;
-        *out++ = something;
+        *out++ = value;
+        *out++ = value;
 
 
         shift_reg(data->reg_ptr, 1);
@@ -201,55 +201,64 @@ int main(void)
                 &Reg1,
                 31);
 
+
+  PaError err;
+  PaStreamParameters outputParameters;
+  PaStream *stream1;
+
+  paTestData2 data1 = {.reg_ptr = &Reg1,
+                       .gate_array_ptr = array_gates,
+                       .array_length = gate_counter,
+                       .wire_ptr = &array_wires[0]};
+
+  err = Pa_Initialize();
+  if( err != paNoError ) goto error;
+
+  outputParameters.device = Pa_GetDefaultOutputDevice(); /* default output device */
+  if (outputParameters.device == paNoDevice) {
+  fprintf(stderr,"Error: No default output device.\n");
+  goto error;
+  }
+  outputParameters.channelCount = 2;       /* stereo output */
+  outputParameters.sampleFormat = paFloat32; /* 32 bit floating point output */
+  outputParameters.suggestedLatency = Pa_GetDeviceInfo( outputParameters.device )->defaultLowOutputLatency;
+  outputParameters.hostApiSpecificStreamInfo = NULL;
+
+  err = Pa_OpenStream(
+          &stream1,
+          NULL, /* no input */
+          &outputParameters,
+          SAMPLE_RATE_1,
+          FRAMES_PER_BUFFER,
+          paClipOff,      /* we won't output out of range samples so don't bother clipping them */
+          patestCallback,
+          &data1 );
+if( err != paNoError ) goto error;
+
+  int question = 1;
+  while(question ==1){
+
   char str1[10];
   printf("Play?");
   scanf("%s", str1);
 
   if (strcmp(str1, "play")==0){
-    printf("Playing...");
-    PaError err;
-    PaStreamParameters outputParameters;
-    PaStream *stream1;
-
-    paTestData2 data1 = {.reg_ptr = &Reg1,
-                         .gate_array_ptr = array_gates,
-                         .array_length = gate_counter,
-                         .wire_ptr = &array_wires[0]};
-
-    err = Pa_Initialize();
-    if( err != paNoError ) goto error;
-
-    outputParameters.device = Pa_GetDefaultOutputDevice(); /* default output device */
-    if (outputParameters.device == paNoDevice) {
-		fprintf(stderr,"Error: No default output device.\n");
-		goto error;
-    }
-    outputParameters.channelCount = 2;       /* stereo output */
-    outputParameters.sampleFormat = paFloat32; /* 32 bit floating point output */
-    outputParameters.suggestedLatency = Pa_GetDeviceInfo( outputParameters.device )->defaultLowOutputLatency;
-    outputParameters.hostApiSpecificStreamInfo = NULL;
-
+    // need a flag so if already playing, no new stream.
+    printf("Playing...\n");
 
     /* Start first stream. **********************/
-    err = Pa_OpenStream(
-						&stream1,
-						NULL, /* no input */
-						&outputParameters,
-						SAMPLE_RATE_1,
-						FRAMES_PER_BUFFER,
-						paClipOff,      /* we won't output out of range samples so don't bother clipping them */
-						patestCallback,
-						&data1 );
-	if( err != paNoError ) goto error;
+
 
     err = Pa_StartStream( stream1 );
     if( err != paNoError ) goto error;
 
-    Pa_Sleep(3000);
+    //Pa_Sleep(3000);
+}
+
+else if (strcmp(str1, "stop")==0){
 
     err = Pa_StopStream( stream1 );
     if( err != paNoError ) goto error;
-
     Pa_CloseStream( stream1 );
 
     Pa_Terminate();
@@ -262,5 +271,16 @@ error:
     fprintf( stderr, "Error number: %d\n", err );
     fprintf( stderr, "Error message: %s\n", Pa_GetErrorText( err ) );
     return err;
+  }
+
+else if (strcmp(str1, "less")==0){
+  // Need to catch before it goes negative.
+  array_wires[0].tap_destination -= 1;
+  printf("Did it");
+}
+else if (strcmp(str1, "more")==0){
+  array_wires[0].tap_destination += 1;
+  printf("Did it");
+}
   }
 }
