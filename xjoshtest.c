@@ -57,10 +57,13 @@
 #define M_PI  (3.14159265)
 #endif
 
-int get_bit(int, int);
-int operate(int, int, char);
-void print_bin(int);
+//-------------------------------------------------
 
+unsigned int get_bit(unsigned int, int);
+unsigned int operate(unsigned int, unsigned int, char);
+void print_bin(unsigned int);
+
+// Links go inside gates.  They're really more like inlets.
 struct Link{
   unsigned int * element;
   int tap;
@@ -70,19 +73,21 @@ struct Gate{
   struct Link in1;
   struct Link in2;
   char type;
-  struct Link out;
+  unsigned int out;
 };
+
 
 typedef struct{
   unsigned int * reg_ptr;
   struct Gate * gate_ptr;
+  struct Wire * wire_ptr;
 } paTestData2;
 
-int get_bit(int reg, int tap){
+unsigned int get_bit(unsigned int reg, int tap){
   return ((reg>>tap) & 1);
 }
 
-int operate(int left, int right, char type){
+unsigned int operate(unsigned int left, unsigned int right, char type){
   if(type == 'X'){
     return (left ^ right);
   }
@@ -91,44 +96,97 @@ int operate(int left, int right, char type){
   }
 }
 
-void compute_gate(struct Gate a_gate){
-  int x = get_bit(*a_gate.in1.element, a_gate.in1.tap);
-  printf("Xvalue: %i  ", x);
-  int y = get_bit(*a_gate.in2.element, a_gate.in2.tap);
-  printf("Yvalue: %i  ", y);
-  int z = operate(x, y, a_gate.type);
-  printf("Zvalue: %i\n", z);
-  z = z<<a_gate.out.tap;
-  *a_gate.out.element = (*a_gate.out.element | z); //maybe this shouldn't be an OR gate...just equals?
-                                                  //so right-most inlet is always dominant?
-}
-
 void shift_reg(unsigned int * reg, int number){
   *reg = *reg>>number;
 }
 
-
-void print_bin(int reg){
-  for(int i=31; i>0; i--){
-    int temp = reg>>i;
-    int temp2 = temp & 1;
+void print_bin(unsigned int reg){
+  for(int i=31; i>-1; i--){
+    unsigned int temp = reg>>i;
+    unsigned int temp2 = temp & 1;
     printf("%i", temp2);
   }
   printf("\n");
 }
 
 void print_gate_state(struct Gate a_gate){
-  printf("in1 element: %p\n", a_gate.in1.element);
   printf("in1 *element: %i\n", *a_gate.in1.element);
   printf("in1 tap: %i\n", a_gate.in1.tap);
-  printf("in2 element: %p\n", a_gate.in2.element);
   printf("in2 *element: %i\n", *a_gate.in2.element);
   printf("in2 tap: %i\n", a_gate.in2.tap);
   printf("type: %c\n", a_gate.type);
-  printf("out element: %p\n", a_gate.out.element);
-  printf("out *element: %i\n", *a_gate.out.element);
-  printf("out tap: %i\n", a_gate.out.tap);
+  printf("out element: %i\n", a_gate.out);
 }
+
+struct Wire{
+  unsigned int * source;
+  unsigned int tap_source;
+  unsigned int * destination;
+  unsigned int tap_destination;
+};
+
+void create_wire(struct Wire * array_wires,
+                 int * counter,
+                 unsigned int * source,
+                 int tap_source,
+                 unsigned int * destination,
+                 int tap_destination){
+
+  struct Wire new_wire;
+
+  new_wire.source = source;
+  new_wire.tap_source = tap_source;
+  new_wire.destination = destination;
+  new_wire.tap_destination = tap_destination;
+
+  array_wires[*counter] = new_wire;
+  *counter += 1;
+}
+
+void compute_gate(struct Gate a_gate){
+  unsigned int x = get_bit(*a_gate.in1.element, a_gate.in1.tap);
+  printf("Xvalue: %i  ", x);
+  unsigned int y = get_bit(*a_gate.in2.element, a_gate.in2.tap);
+  printf("Yvalue: %i  ", y);
+  unsigned int z = operate(x, y, a_gate.type);
+  printf("Zvalue: %i\n", z);
+  a_gate.out =  z;
+}
+
+void compute_wire(struct Wire * a_wire){
+  unsigned int x = get_bit(a_wire[0].source, 0);
+  printf("The wire's source is: %u\n", a_wire[0].source);
+  printf("The wire's source value: %u\n", x);
+  printf("The wire's destination value: %u\n", a_wire[0].destination);
+  x = x<<a_wire[0].tap_destination;
+  a_wire[0].destination = (a_wire[0].destination | x);
+}
+
+void create_gate(struct Gate * gate,
+                 int * counter,
+                 unsigned int * element1,
+                 int tap1,
+                 unsigned int * element2,
+                 int tap2,
+                 char type){
+
+    struct Link link1;
+    link1.element = element1;
+    link1.tap = tap1;
+
+    struct Link link2;
+    link2.element = element2;
+    link2.tap = tap2;
+
+    struct Gate Gate1;
+    Gate1.in1 = link1;
+    Gate1.in2 = link2;
+    Gate1.type = type;
+
+    gate[*counter] = Gate1;
+    *counter += 1;
+}
+
 
 /* This routine will be called by the PortAudio engine when audio is needed.
  ** It may called at interrupt level on some machines so don't do anything
@@ -155,15 +213,15 @@ static int patestCallback( const void *inputBuffer, void *outputBuffer,
         }
 
         float something = (((float) *data->reg_ptr/4294967295) - 0.5) * 2.0;
-        printf("%f\n", something);
 
         /* Stereo - two channels. */
         *out++ = value;
         *out++ = value;
 
+        compute_gate(*data->gate_ptr);
+        compute_wire(*data->wire_ptr);
         print_bin(*data->reg_ptr);
         shift_reg(data->reg_ptr, 1);
-        compute_gate(*data->gate_ptr);
 
     }
     return 0;
@@ -173,8 +231,41 @@ static int patestCallback( const void *inputBuffer, void *outputBuffer,
 int main(void)
 {
 
-    unsigned int Reg1 = 4;
+    struct Gate array_gates[10];
+    struct Wire array_wires[10];
 
+    int gate_counter = 0;
+    int wire_counter = 0;
+
+    unsigned int Reg1 = 1;
+
+/*
+    create_wire(array_wires,
+                &wire_counter,
+                &Reg1,
+                0,
+                &Reg1,
+                16);
+*/
+
+    create_gate(array_gates,
+                &gate_counter,
+                &Reg1,
+                0,
+                &Reg1,
+                1,
+                'X');
+
+    printf("array_gates[0]: %i\n", array_gates[0].out);
+
+    create_wire(array_wires,
+                &wire_counter,
+                array_gates[0].out,
+                0,
+                &Reg1,
+                31);
+
+/*
     struct Link link1;
     link1.element = &Reg1;
     link1.tap = 0;
@@ -192,14 +283,13 @@ int main(void)
     Gate1.in2 = link2;
     Gate1.type = 'X';
     Gate1.out = link3;
+*/
 
     PaError err;
     PaStreamParameters outputParameters;
     PaStream *stream1;
 
-    paTestData2 data1 = {.reg_ptr = &Reg1, .gate_ptr = &Gate1};
-
-    printf("%i\n", *data1.reg_ptr);
+    paTestData2 data1 = {.reg_ptr = &Reg1, .gate_ptr = &array_gates[0], .wire_ptr = &array_wires[0]};
 
     err = Pa_Initialize();
     if( err != paNoError ) goto error;
@@ -230,12 +320,7 @@ int main(void)
     err = Pa_StartStream( stream1 );
     if( err != paNoError ) goto error;
 
-    Pa_Sleep( 1000 );
-
-    //Reg1 = 3847958;
-    //printf("RESET!");
-
-    Pa_Sleep(3000);
+    Pa_Sleep(1);
 
     err = Pa_StopStream( stream1 );
     if( err != paNoError ) goto error;
@@ -244,9 +329,13 @@ int main(void)
 
     Pa_Terminate();
 
+    printf("Gate counter is now: ");
+    printf("%i\n", gate_counter);
+    printf("Wire counter is now: ");
+    printf("%i\n", wire_counter);
+
     printf("Reg is now: %i\n", Reg1);
 
-    printf("Test finished.\n");
     return err;
 
 error:
