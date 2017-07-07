@@ -9,52 +9,6 @@
 #include "portaudio.h"
 #include "shift_shaper.h"
 
-
-static int patestCallback( const void *inputBuffer, void *outputBuffer,
-						  unsigned long framesPerBuffer,
-						  const PaStreamCallbackTimeInfo* timeInfo,
-						  PaStreamCallbackFlags statusFlags,
-						  void *userData )
-{
-    paTestData2 *data = (paTestData2*)userData;
-    float *out = (float*)outputBuffer;
-    int frameIndex;
-    (void) timeInfo; /* Prevent unused variable warnings. */
-    (void) inputBuffer;
-
-    int framecount = 0;
-
-// "Perform" function ----------------------------------------------------------
-
-    for( frameIndex=0; frameIndex<(int)framesPerBuffer; frameIndex++ )
-    {
-
-      compute_gate_array(data->gate_array_ptr, data->array_length);
-      compute_wire(data->wire_ptr);
-
-      float final_bit = get_bit(data->reg_ptr->state, 0);
-      if (final_bit == 0) {
-        final_bit = -1; // use full amplitude range
-      }
-
-
-        //float whole_int = (((float) *data->reg_ptr/4294967295) - 0.5) * 2.0;
-
-        /* Stereo - two channels. */
-        *out++ = final_bit;
-        *out++ = final_bit;
-
-        framecount ++;
-        if (framecount >= 44100){
-          framecount = 0;
-        }
-        if ((framecount % *data->shift_speed_mod) == 0){
-        shift_reg(&data->reg_ptr->state, 1);
-      }
-    }
-    return 0;
-}
-
 /*******************************************************************/
 int main(void)
 {
@@ -113,9 +67,10 @@ int main(void)
 
   outputParameters.device = Pa_GetDefaultOutputDevice(); /* default output device */
   if (outputParameters.device == paNoDevice) {
-  fprintf(stderr,"Error: No default output device.\n");
-  goto error;
+    fprintf(stderr,"Error: No default output device.\n");
+    goto error;
   }
+
   outputParameters.channelCount = 2;       /* stereo output */
   outputParameters.sampleFormat = paFloat32; /* 32 bit floating point output */
   outputParameters.suggestedLatency = Pa_GetDeviceInfo( outputParameters.device )->defaultLowOutputLatency;
@@ -130,8 +85,8 @@ int main(void)
           paClipOff,      /* we won't output out of range samples so don't bother clipping them */
           patestCallback,
           &data1 );
-if( err != paNoError ) goto error;
 
+if( err != paNoError ) goto error;
 
 // Run Loop --------------------------------------------------------------------
 
@@ -141,7 +96,7 @@ if( err != paNoError ) goto error;
     printf("\nstart, stop, add, less, more, quit?");
     scanf("%s", str1);
 
-  if (strcmp(str1, "start")==0){  //  ---------------- start
+  if (strcmp(str1, "start")==0){  //  ---------------- start (need err, stream_in_progress)
     if (stream_in_progress == 1){
       printf("Already playing!");
     }
@@ -156,13 +111,13 @@ if( err != paNoError ) goto error;
       }
     }
 
-  else if (strcmp(str1, "stop")==0){  //  ------------- stop
+  else if (strcmp(str1, "stop")==0){  //  ------------- stop (need err, stream1, stream_in_progress)
 
     err = Pa_StopStream( stream1 );
     if( err != paNoError ) goto error;
     stream_in_progress = 0;
   }
-  else if (strcmp(str1, "quit")==0){  // -------------- quit
+  else if (strcmp(str1, "quit")==0){  // -------------- quit (need stream1, err, stream_in_progress, running)
 
     err = Pa_StopStream( stream1 );
     if( err != paNoError ) goto error;
@@ -179,7 +134,7 @@ error:
     fprintf( stderr, "Error message: %s\n", Pa_GetErrorText( err ) );
     return err;
   }
-else if (strcmp(str1, "less")==0){  // -------------- less
+else if (strcmp(str1, "less")==0){  // -------------- less (need arraywires)
   if (*array_wires[0].tap_destination <=0) {
     printf("Beginning of array reached!\n");
   }
@@ -188,7 +143,7 @@ else if (strcmp(str1, "less")==0){  // -------------- less
   printf("Done.\n");
 }
 }
-else if (strcmp(str1, "more")==0){
+else if (strcmp(str1, "more")==0){ //-------------------more (need array_wires, arrayregs, arraygates)
   if (*array_wires[0].tap_destination >= 31) {
     printf("End of array reached!\n");
   }
@@ -198,11 +153,56 @@ else if (strcmp(str1, "more")==0){
     }
     print_gate(&array_gates[0], array_regs, array_gates);
   }
-else if (strcmp(str1, "speed")==0){
+else if (strcmp(str1, "speed")==0){ //--------------------speed (needs shift_speed_mod)
   shift_speed_mod = 5;
 }
-else if (strcmp(str1, "show")==0){
+else if (strcmp(str1, "show")==0){ //-------------------- show ()
   print_reg_and_gates(array_regs[0], &array_gates[0], MAX_NUM_GATES);
 }
 }
+}
+
+static int patestCallback( const void *inputBuffer, void *outputBuffer,
+							unsigned long framesPerBuffer,
+							const PaStreamCallbackTimeInfo* timeInfo,
+							PaStreamCallbackFlags statusFlags,
+							void *userData )
+{
+		paTestData2 *data = (paTestData2*)userData;
+		float *out = (float*)outputBuffer;
+		int frameIndex;
+		(void) timeInfo; /* Prevent unused variable warnings. */
+		(void) inputBuffer;
+
+		int framecount = 0;
+
+// "Perform" function ----------------------------------------------------------
+
+		for( frameIndex=0; frameIndex<(int)framesPerBuffer; frameIndex++ )
+		{
+
+			compute_gate_array(data->gate_array_ptr, data->array_length);
+			compute_wire(data->wire_ptr);
+
+			float final_bit = get_bit(data->reg_ptr->state, 0);
+			if (final_bit == 0) {
+				final_bit = -1; // use full amplitude range
+			}
+
+
+				//float whole_int = (((float) *data->reg_ptr/4294967295) - 0.5) * 2.0;
+
+				/* Stereo - two channels. */
+				*out++ = final_bit;
+				*out++ = final_bit;
+
+				framecount ++;
+				if (framecount >= 44100){
+					framecount = 0;
+				}
+				if ((framecount % *data->shift_speed_mod) == 0){
+				shift_reg(&data->reg_ptr->state, 1);
+			}
+		}
+		return 0;
 }

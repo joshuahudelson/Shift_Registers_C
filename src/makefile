@@ -5,7 +5,7 @@ CFLAGS = -I$(IDIR)
 ODIR = obj
 LDIR = ../lib
 
-LIBS = -lm
+LIBS = -lm -lportaudio
 
 _DEPS = shift_shaper.h
 DEPS = $(patsubst %, $(IDIR)/%, $(_DEPS))

@@ -1,9 +1,8 @@
 #include <stdio.h>
-
-// STRUCTS ---------------------------------------------------------------------
-
+#include "shift_shaper.h"
 
 // FUNCTIONS--------------------------------------------------------------------
+
 
 unsigned int get_bit(unsigned int reg, int tap){
   return ((reg>>tap) & 1);
