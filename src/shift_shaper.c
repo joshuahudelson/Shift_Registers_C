@@ -1,15 +1,13 @@
-//Borrowed code from:
-/** @file patest_two_rates.c
+/* Portaudio code built from:
+ * patest_two_rates.c
  * Author: Phil Burk  http://www.softsynth.com
  */
 
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
-#include "portaudio.h"
 #include "shift_shaper.h"
 
-/*******************************************************************/
 int main(void)
 {
     struct Reg array_regs[10];
@@ -50,53 +48,64 @@ int main(void)
                 &array_regs[0].state,
                 &Reg1_inlet);
 
+    PaError err;
+    PaStreamParameters outputParameters;
+    PaStream *stream1;
 
-  PaError err;
-  PaStreamParameters outputParameters;
-  PaStream *stream1;
+    paTestData2 data1 = {.reg_ptr = array_regs,
+                         .gate_array_ptr = array_gates,
+                         .array_length = gate_counter,
+                         .wire_ptr = &array_wires[0],
+                         .shift_speed_mod = &shift_speed_mod,
+                       };
 
-  paTestData2 data1 = {.reg_ptr = array_regs,
-                       .gate_array_ptr = array_gates,
-                       .array_length = gate_counter,
-                       .wire_ptr = &array_wires[0],
-                       .shift_speed_mod = &shift_speed_mod,
-                     };
+    err = Pa_Initialize();
+    if( err != paNoError ) goto error;
 
-  err = Pa_Initialize();
-  if( err != paNoError ) goto error;
+    outputParameters.device = Pa_GetDefaultOutputDevice(); /* default output device */
+    if (outputParameters.device == paNoDevice) {
+      fprintf(stderr,"Error: No default output device.\n");
+      goto error;
+    }
 
-  outputParameters.device = Pa_GetDefaultOutputDevice(); /* default output device */
-  if (outputParameters.device == paNoDevice) {
-    fprintf(stderr,"Error: No default output device.\n");
-    goto error;
-  }
+    outputParameters.channelCount = 2;       /* stereo output */
+    outputParameters.sampleFormat = paFloat32; /* 32 bit floating point output */
+    outputParameters.suggestedLatency = Pa_GetDeviceInfo( outputParameters.device )->defaultLowOutputLatency;
+    outputParameters.hostApiSpecificStreamInfo = NULL;
 
-  outputParameters.channelCount = 2;       /* stereo output */
-  outputParameters.sampleFormat = paFloat32; /* 32 bit floating point output */
-  outputParameters.suggestedLatency = Pa_GetDeviceInfo( outputParameters.device )->defaultLowOutputLatency;
-  outputParameters.hostApiSpecificStreamInfo = NULL;
+    err = Pa_OpenStream(
+            &stream1,
+            NULL, /* no input */
+            &outputParameters,
+            SAMPLE_RATE_1,
+            FRAMES_PER_BUFFER,
+            paClipOff,      /* we won't output out of range samples so don't bother clipping them */
+            patestCallback,
+            &data1 );
 
-  err = Pa_OpenStream(
-          &stream1,
-          NULL, /* no input */
-          &outputParameters,
-          SAMPLE_RATE_1,
-          FRAMES_PER_BUFFER,
-          paClipOff,      /* we won't output out of range samples so don't bother clipping them */
-          patestCallback,
-          &data1 );
-
-if( err != paNoError ) goto error;
+    if( err != paNoError ) goto error;
 
 // Run Loop --------------------------------------------------------------------
 
-  while(running == 1){
+  struct data_for_interface the_data;
+  the_data.err = &err;
+  the_data.stream_in_progress = &stream_in_progress;
+  the_data.stream1 = stream1;
+  the_data.running = &running;
+  the_data.array_wires = array_wires;
+  the_data.array_regs = array_regs;
+  the_data.array_gates = array_gates;
+  the_data.shift_speed_mod = &shift_speed_mod;
 
+  while(running == 1){
+    prompt_user(the_data, Pa_StartStream);
+}
+/*
     char str1[10];
     printf("\nstart, stop, add, less, more, quit?");
     scanf("%s", str1);
 
-  if (strcmp(str1, "start")==0){  //  ---------------- start (need err, stream_in_progress)
+  if (strcmp(str1, "start")==0){
     if (stream_in_progress == 1){
       printf("Already playing!");
     }
@@ -110,14 +119,15 @@ if( err != paNoError ) goto error;
         }
       }
     }
+  }
 
-  else if (strcmp(str1, "stop")==0){  //  ------------- stop (need err, stream1, stream_in_progress)
+  else if (strcmp(str1, "stop")==0){
 
     err = Pa_StopStream( stream1 );
     if( err != paNoError ) goto error;
     stream_in_progress = 0;
   }
-  else if (strcmp(str1, "quit")==0){  // -------------- quit (need stream1, err, stream_in_progress, running)
+  else if (strcmp(str1, "quit")==0){
 
     err = Pa_StopStream( stream1 );
     if( err != paNoError ) goto error;
@@ -134,7 +144,7 @@ error:
     fprintf( stderr, "Error message: %s\n", Pa_GetErrorText( err ) );
     return err;
   }
-else if (strcmp(str1, "less")==0){  // -------------- less (need arraywires)
+else if (strcmp(str1, "less")==0){
   if (*array_wires[0].tap_destination <=0) {
     printf("Beginning of array reached!\n");
   }
@@ -143,7 +153,7 @@ else if (strcmp(str1, "less")==0){  // -------------- less (need arraywires)
   printf("Done.\n");
 }
 }
-else if (strcmp(str1, "more")==0){ //-------------------more (need array_wires, arrayregs, arraygates)
+else if (strcmp(str1, "more")==0){
   if (*array_wires[0].tap_destination >= 31) {
     printf("End of array reached!\n");
   }
@@ -153,13 +163,23 @@ else if (strcmp(str1, "more")==0){ //-------------------more (need array_wires, 
     }
     print_gate(&array_gates[0], array_regs, array_gates);
   }
-else if (strcmp(str1, "speed")==0){ //--------------------speed (needs shift_speed_mod)
+else if (strcmp(str1, "speed")==0){
   shift_speed_mod = 5;
 }
-else if (strcmp(str1, "show")==0){ //-------------------- show ()
+else if (strcmp(str1, "show")==0){
   print_reg_and_gates(array_regs[0], &array_gates[0], MAX_NUM_GATES);
 }
 }
+}
+*/
+
+error:
+    Pa_Terminate();
+    fprintf( stderr, "An error occured while using the portaudio stream\n" );
+    fprintf( stderr, "Error number: %d\n", err );
+    fprintf( stderr, "Error message: %s\n", Pa_GetErrorText( err ) );
+    printf("This is in main");
+    return err;
 }
 
 static int patestCallback( const void *inputBuffer, void *outputBuffer,

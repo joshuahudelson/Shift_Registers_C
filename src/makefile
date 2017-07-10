@@ -10,7 +10,7 @@ LIBS = -lm -lportaudio
 _DEPS = shift_shaper.h
 DEPS = $(patsubst %, $(IDIR)/%, $(_DEPS))
 
-_OBJ = shift_shaper.o shift_shaper_lib.o
+_OBJ = shift_shaper.o shift_shaper_lib.o shift_shaper_interface.o
 OBJ = $(patsubst %, $(ODIR)/%, $(_OBJ))
 
 $(ODIR)/%.o: %.c $(DEPS)
