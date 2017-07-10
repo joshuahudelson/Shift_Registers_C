@@ -18,7 +18,6 @@ int main(void)
     int gate_counter = 0;
     int wire_counter = 0;
 
-    unsigned int Reg1 = 28590;
     unsigned int Reg1_inlet = 31;
 
     int running = 1;
@@ -98,8 +97,8 @@ int main(void)
   the_data.shift_speed_mod = &shift_speed_mod;
 
   while(running == 1){
-    prompt_user(the_data, Pa_StartStream);
-}
+    prompt_user(&the_data, Pa_StartStream);
+  }
 /*
     char str1[10];
     printf("\nstart, stop, add, less, more, quit?");
