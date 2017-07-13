@@ -59,12 +59,12 @@ int main(void)
                        };
 
     err = Pa_Initialize();
-    if( err != paNoError ) goto error;
+    //if( err != paNoError ) goto error;
 
     outputParameters.device = Pa_GetDefaultOutputDevice(); /* default output device */
     if (outputParameters.device == paNoDevice) {
       fprintf(stderr,"Error: No default output device.\n");
-      goto error;
+      //goto error;
     }
 
     outputParameters.channelCount = 2;       /* stereo output */
@@ -82,7 +82,7 @@ int main(void)
             patestCallback,
             &data1 );
 
-    if( err != paNoError ) goto error;
+    //if( err != paNoError ) goto error;
 
 // Run Loop --------------------------------------------------------------------
 
@@ -95,90 +95,11 @@ int main(void)
   the_data.array_regs = array_regs;
   the_data.array_gates = array_gates;
   the_data.shift_speed_mod = &shift_speed_mod;
+  the_data.gate_counter = &gate_counter;
 
   while(running == 1){
     prompt_user(&the_data, Pa_StartStream);
   }
-/*
-    char str1[10];
-    printf("\nstart, stop, add, less, more, quit?");
-    scanf("%s", str1);
-
-  if (strcmp(str1, "start")==0){
-    if (stream_in_progress == 1){
-      printf("Already playing!");
-    }
-    else{
-      err = Pa_StartStream( stream1 );
-      if( err != paNoError ){
-        goto error;
-      }
-      else{
-        stream_in_progress = 1;
-        }
-      }
-    }
-  }
-
-  else if (strcmp(str1, "stop")==0){
-
-    err = Pa_StopStream( stream1 );
-    if( err != paNoError ) goto error;
-    stream_in_progress = 0;
-  }
-  else if (strcmp(str1, "quit")==0){
-
-    err = Pa_StopStream( stream1 );
-    if( err != paNoError ) goto error;
-    stream_in_progress = 0;
-
-    Pa_CloseStream( stream1 );
-    Pa_Terminate();
-    running = 0;
-    return err;
-error:
-    Pa_Terminate();
-    fprintf( stderr, "An error occured while using the portaudio stream\n" );
-    fprintf( stderr, "Error number: %d\n", err );
-    fprintf( stderr, "Error message: %s\n", Pa_GetErrorText( err ) );
-    return err;
-  }
-else if (strcmp(str1, "less")==0){
-  if (*array_wires[0].tap_destination <=0) {
-    printf("Beginning of array reached!\n");
-  }
-  else {
-  *array_wires[0].tap_destination -= 1;
-  printf("Done.\n");
-}
-}
-else if (strcmp(str1, "more")==0){
-  if (*array_wires[0].tap_destination >= 31) {
-    printf("End of array reached!\n");
-  }
-  else {
-  *array_wires[0].tap_destination += 1;
-  printf("Done.\n");
-    }
-    print_gate(&array_gates[0], array_regs, array_gates);
-  }
-else if (strcmp(str1, "speed")==0){
-  shift_speed_mod = 5;
-}
-else if (strcmp(str1, "show")==0){
-  print_reg_and_gates(array_regs[0], &array_gates[0], MAX_NUM_GATES);
-}
-}
-}
-*/
-
-error:
-    Pa_Terminate();
-    fprintf( stderr, "An error occured while using the portaudio stream\n" );
-    fprintf( stderr, "Error number: %d\n", err );
-    fprintf( stderr, "Error message: %s\n", Pa_GetErrorText( err ) );
-    printf("This is in main");
-    return err;
 }
 
 static int patestCallback( const void *inputBuffer, void *outputBuffer,
@@ -214,6 +135,7 @@ static int patestCallback( const void *inputBuffer, void *outputBuffer,
 				/* Stereo - two channels. */
 				*out++ = final_bit;
 				*out++ = final_bit;
+        // printf("\r%f", out);
 
 				framecount ++;
 				if (framecount >= 44100){

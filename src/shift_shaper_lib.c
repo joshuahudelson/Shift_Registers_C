@@ -83,6 +83,7 @@ void create_gate(struct Gate * gate, //array of gates
 
     gate[*counter] = new_gate;
     *counter += 1;
+    printf("Made a gate!");
   }
 }
 

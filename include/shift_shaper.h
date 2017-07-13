@@ -51,6 +51,7 @@ struct data_for_interface{
   struct Reg * array_regs;
   struct Gate * array_gates;
   int * shift_speed_mod;
+  int * gate_counter;
 };
 
 // Function Declarations -------------------------------------------------------
