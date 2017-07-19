@@ -39,7 +39,8 @@ void create_gate(struct Gate * gate, //array of gates
                  int tap1,
                  unsigned int * element2,
                  int tap2,
-                 char type){
+                 char type,
+                 char species){
 
   if (*counter >= MAX_NUM_GATES){
     printf("Maximum number of gates has been reached!");
@@ -52,7 +53,8 @@ void create_gate(struct Gate * gate, //array of gates
     new_gate.tap2 = tap2;
     new_gate.type = type;
     new_gate.out = 0;
-    new_gate.species = type;
+    new_gate.species = species;
+    printf("Species: %c", new_gate.species);
 
     gate[*counter] = new_gate;
     *counter += 1;
@@ -115,28 +117,65 @@ void print_reg_and_gates(struct Logic_Module * LM, unsigned int * reg){
   printf("\n");
 
   for(int i=0; i<LM->counter; i++){
-    for(int j=31; j>-1; j--){
-      if (j == LM->array_of_gates[i].tap1){
-        printf("|");
-      }
-      else if (j == LM->array_of_gates[i].tap2){
-        printf("|");
-      }
-      else{
-        printf(" ");
-      }
+    if (LM->array_of_gates[i].species == 'r'){
+      print_reg_taps(LM->array_of_gates[i].tap1, LM->array_of_gates[i].tap2);
+      printf("      ");
+      print_gate_tap_and_type(LM->counter, 11, 11, i, LM->array_of_gates[i].type);
     }
-
-    printf("      ");
-
-    for (int k=0; k<LM->counter; k++){
-      if (k == i){
-        printf("%c", LM->array_of_gates[i].type);
-      }
-      else{
-        printf(" ");
-      }
+    else if (LM->array_of_gates[i].species == 'b'){
+      print_reg_taps(LM->array_of_gates[i].tap1, LM->array_of_gates[i].tap1);
+      printf("      ");
+      print_gate_tap_and_type(LM->counter, LM->array_of_gates[i].tap2, LM->array_of_gates[i].tap2, i, LM->array_of_gates[i].type);
+    }
+    else if (LM->array_of_gates[i].species == 'g'){
+      print_zero_reg();
+      printf("      ");
+      print_gate_tap_and_type(LM->counter, LM->array_of_gates[i].tap1, LM->array_of_gates[i].tap2, i, LM->array_of_gates[i].type);
     }
     printf("\n");
+  }
+  print_inlet(LM->reg_inlet_value);
+  printf("\n");
+}
+
+void print_inlet(int inlet){
+  for (int i=31; i>-1; i--){
+    if (inlet == i){
+    printf("^");
+    }
+    else{
+      printf(" ");
+    }
+  }
+}
+
+void print_zero_reg(void){
+  for (int i=31; i>-1; i--){
+    printf(" ");
+  }
+}
+
+void print_reg_taps(int tap1, int tap2){
+  for (int i=31; i>-1; i--){
+    if ((i==tap1) | (i==tap2)){
+      printf("|");
+    }
+    else{
+      printf(" ");
+    }
+  }
+}
+
+void print_gate_tap_and_type(int counter, int gate1, int gate2, int gate_index, char type){
+  for (int i=0; i<counter; i++){
+    if ((i==gate1) | (i==gate2)){
+      printf("|");
+    }
+    else if (i==gate_index){
+      printf("%c", type);
+    }
+    else{
+      printf(" ");
+    }
   }
 }

@@ -1,12 +1,16 @@
 #include "shift_shaper.h"
+#include <math.h>
+#include <time.h>
 
 int prompt_user(struct data_for_interface * interface_data){
   char input_string[10];
-  printf("\n start, stop, add, less, more, speed, quit?");
+  print_reg_and_gates(interface_data->LM, interface_data->reg);
+  printf("\n start, stop, r/b/g, show, move, speed, jumpstart, quit?  ");
   scanf("%s", input_string);
 
   if (strcmp(input_string, "start")==0){
     start_the_stream(interface_data);
+    print_reg_and_gates(interface_data->LM, interface_data->reg);
     }
   else if (strcmp(input_string, "stop")==0){
     stop_the_stream(interface_data);
@@ -16,21 +20,51 @@ int prompt_user(struct data_for_interface * interface_data){
     quit(interface_data);
   }
   else if (strcmp(input_string, "speed")==0){
-    *interface_data->shift_speed_mod = 5;
+    shift_speed(interface_data->shift_speed_mod);
   }
-  else if (strcmp(input_string, "rr")==0){
-    reg_reg(interface_data);
+  else if (strcmp(input_string, "r")==0){
+    reg_reg(interface_data, input_string[0]);
+    print_reg_and_gates(interface_data->LM, interface_data->reg);
   }
-  else if (strcmp(input_string, "rg")==0){
-    reg_gate(interface_data);
+  else if (strcmp(input_string, "b")==0){
+    reg_gate(interface_data, input_string[0]);
+    print_reg_and_gates(interface_data->LM, interface_data->reg);
   }
-  else if (strcmp(input_string, "gg")==0){
-    gate_gate(interface_data);
+  else if (strcmp(input_string, "g")==0){
+    gate_gate(interface_data, input_string[0]);
+    print_reg_and_gates(interface_data->LM, interface_data->reg);
   }
   else if (strcmp(input_string, "show")==0){
     printf("\n");
     print_reg_and_gates(interface_data->LM, interface_data->reg);
     }
+  else if (strcmp(input_string, "move")==0){
+    move_inlet(interface_data->LM);
+    print_reg_and_gates(interface_data->LM, interface_data->reg);
+  }
+  else if (strcmp(input_string, "jumpstart")==0){
+    jumpstart(interface_data->reg);
+    print_reg_and_gates(interface_data->LM, interface_data->reg);
+  }
+}
+
+void shift_speed(float * shift_speed_mod){
+  float temp_amount;
+  printf("Amount: ");
+  scanf("%f", &temp_amount);
+  *shift_speed_mod = temp_amount;
+}
+
+void jumpstart(unsigned int * reg){
+  srand(time(NULL));
+  *reg = rand();
+}
+
+void move_inlet(struct Logic_Module * LM){
+  int temp_amount;
+  printf("Index: ");
+  scanf("%i", &temp_amount);
+  LM->reg_inlet_value = temp_amount % 32;
 }
 
 void start_the_stream(struct data_for_interface * interface_data){
@@ -58,7 +92,7 @@ void quit(struct data_for_interface * interface_data){
 }
 
 
-void reg_reg(struct data_for_interface * interface_data){
+void reg_reg(struct data_for_interface * interface_data, char species){
   unsigned int tap_one, tap_two;
   char gate_type;
 
@@ -75,10 +109,11 @@ void reg_reg(struct data_for_interface * interface_data){
               tap_one,
               interface_data->reg,
               tap_two,
-              gate_type);
+              gate_type,
+              species);
 }
 
-void reg_gate(struct data_for_interface * interface_data){
+void reg_gate(struct data_for_interface * interface_data, char species){
   unsigned int tap_one, tap_two;
   char gate_type;
 
@@ -95,11 +130,12 @@ void reg_gate(struct data_for_interface * interface_data){
               tap_one,
               &interface_data->LM->array_of_gates[tap_two].out,
               0,
-              gate_type);
+              gate_type,
+              species);
 }
 
 
-void gate_gate(struct data_for_interface * interface_data){
+void gate_gate(struct data_for_interface * interface_data, char species){
   unsigned int tap_one, tap_two;
   char gate_type;
 
@@ -116,5 +152,6 @@ void gate_gate(struct data_for_interface * interface_data){
               0,
               &interface_data->LM->array_of_gates[tap_two].out,
               0,
-              gate_type);
+              gate_type,
+              species);
 }

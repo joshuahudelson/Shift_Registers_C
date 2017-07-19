@@ -25,11 +25,12 @@ int main(void)
               3,
               LM.reg,
               4,
-              'X');
+              'X',
+              'r');
 
   int running = 1;
   int stream_in_progress = 0;
-  int shift_speed_mod = 1;
+  float shift_speed_mod = 1.0;
 
   PaError err;
   PaStreamParameters outputParameters;
@@ -94,7 +95,7 @@ static int patestCallback( const void *inputBuffer, void *outputBuffer,
 		(void) timeInfo; /* Prevent unused variable warnings. */
 		(void) inputBuffer;
 
-		int framecount = 0;
+		float framecount = 0.0;
 
 // "Perform" function ----------------------------------------------------------
 
@@ -112,13 +113,11 @@ static int patestCallback( const void *inputBuffer, void *outputBuffer,
 				*out++ = final_bit;
         // printf("\r%f", out);
 
-				framecount ++;
-				if (framecount >= 44100){
-					framecount = 0;
+				framecount += *pa_data->shift_speed_mod;
+				if (framecount >= 1.0){
+					framecount = 0.0;
+          shift_reg(pa_data->reg_ptr, 1);
 				}
-				if ((framecount % *pa_data->shift_speed_mod) == 0){
-				shift_reg(pa_data->reg_ptr, 1);
-			}
 		}
 		return 0;
 }
