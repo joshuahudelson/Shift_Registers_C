@@ -20,15 +20,6 @@ struct Gate{
   char species;
 };
 
-struct Wire{
-  // Not in use.
-  unsigned int * source;
-  unsigned int tap_source;
-  unsigned int * destination;
-  unsigned int * tap_destination;
-  char species;
-};
-
 struct Logic_Module{
   struct Gate * array_of_gates;
   unsigned int counter; // How many of the array locations are being used.
@@ -62,10 +53,8 @@ unsigned int get_bit(unsigned int, int);
 unsigned int operate(unsigned int, unsigned int, char);
 void shift_reg(unsigned int *, int);
 void print_gate_array(struct Gate *, int);
-void create_gate(struct Gate *, int *, unsigned int *, int, unsigned int *, int, char);
-void create_wire(struct Wire *, int *, unsigned int *, int, unsigned int *, int *);
+void create_gate(struct Gate *, unsigned int *, unsigned int *,unsigned int, unsigned int *, unsigned int, char);
 void compute_gate(struct Gate *);
-void compute_wire(struct Wire *);
 void compute_gate_array(struct Gate *, unsigned int);
 struct Logic_Module create_logic_module(unsigned int *, unsigned int);
 
@@ -80,3 +69,6 @@ int prompt_user(struct data_for_interface *);
 void start_the_stream(struct data_for_interface * the_data);
 void stop_the_stream(struct data_for_interface * the_data);
 void quit(struct data_for_interface * the_data);
+void reg_reg(struct data_for_interface *);
+void reg_gate(struct data_for_interface *);
+void gate_gate(struct data_for_interface *);

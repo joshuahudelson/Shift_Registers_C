@@ -57,9 +57,6 @@ int main(void)
           patestCallback,
           &data1 );
 
-
-// Run Loop --------------------------------------------------------------------
-
   struct data_for_interface the_data;
   the_data.err = &err;
   the_data.stream_in_progress = &stream_in_progress;

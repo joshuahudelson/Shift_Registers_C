@@ -34,11 +34,11 @@ void print_gate_array(struct Gate * array_gates, int length){
 }
 
 void create_gate(struct Gate * gate, //array of gates
-                 int * counter,
+                 unsigned int * counter,
                  unsigned int * element1,
-                 int tap1,
+                 unsigned int tap1,
                  unsigned int * element2,
-                 int tap2,
+                 unsigned int tap2,
                  char type){
 
   if (*counter >= MAX_NUM_GATES){
@@ -83,13 +83,6 @@ void compute_gate(struct Gate * a_gate){
   unsigned int y = get_bit(*a_gate->element2, a_gate->tap2);
   unsigned int z = operate(x, y, a_gate->type);
   a_gate->out =  z;
-}
-
-
-void compute_wire(struct Wire * a_wire){
-  unsigned int x = get_bit(*a_wire->source, 0);
-  x = x<<*a_wire->tap_destination;
-  *a_wire->destination = (*a_wire->destination | x);
 }
 
 void compute_gate_array(struct Gate * a_gate, unsigned int array_length){
