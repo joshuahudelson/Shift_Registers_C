@@ -19,22 +19,18 @@ int prompt_user(struct data_for_interface * interface_data){
     *interface_data->shift_speed_mod = 5;
   }
   else if (strcmp(input_string, "rr")==0){
-    printf("calling reg_reg...\n");
     reg_reg(interface_data);
   }
   else if (strcmp(input_string, "rg")==0){
-    printf("calling reg_gate...\n");
     reg_gate(interface_data);
   }
   else if (strcmp(input_string, "gg")==0){
-    printf("calling gate_gate...\n");
     gate_gate(interface_data);
   }
   else if (strcmp(input_string, "show")==0){
-    for(int i=0; i<interface_data->LM->counter; i++){
-      printf("%i", i);
+    printf("\n");
+    print_reg_and_gates(interface_data->LM, interface_data->reg);
     }
-  }
 }
 
 void start_the_stream(struct data_for_interface * interface_data){

@@ -73,7 +73,6 @@ struct Logic_Module create_logic_module(unsigned int * reg,
   return lm;
 }
 
-
 void compute_gate(struct Gate * a_gate){
   unsigned int x = get_bit(*a_gate->element1, a_gate->tap1);
   unsigned int y = get_bit(*a_gate->element2, a_gate->tap2);
@@ -93,4 +92,51 @@ unsigned int compute_gate_array(struct Gate * a_gate, unsigned int array_length)
 void compute_logic_module(struct Logic_Module * LM){
   LM->final_value = compute_gate_array(LM->array_of_gates, LM->counter);
   *LM->reg = *LM->reg | LM->final_value<<LM->reg_inlet_value;
+}
+
+void print_int_as_binary(unsigned int * reg){
+  for(int i=31; i>-1; i--){
+    unsigned int temp = *reg>>i;
+    unsigned int temp2 = temp & 1;
+    printf("%i", temp2);
+  }
+}
+
+void print_reg_and_gates(struct Logic_Module * LM, unsigned int * reg){
+
+  print_int_as_binary(reg);
+
+  printf("      ");
+
+  for(int i=0; i<LM->counter; i++){
+    printf("%i", i);
+  }
+
+  printf("\n");
+
+  for(int i=0; i<LM->counter; i++){
+    for(int j=31; j>-1; j--){
+      if (j == LM->array_of_gates[i].tap1){
+        printf("|");
+      }
+      else if (j == LM->array_of_gates[i].tap2){
+        printf("|");
+      }
+      else{
+        printf(" ");
+      }
+    }
+
+    printf("      ");
+
+    for (int k=0; k<LM->counter; k++){
+      if (k == i){
+        printf("%c", LM->array_of_gates[i].type);
+      }
+      else{
+        printf(" ");
+      }
+    }
+    printf("\n");
+  }
 }
