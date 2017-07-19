@@ -34,11 +34,11 @@ void print_gate_array(struct Gate * array_gates, int length){
 }
 
 void create_gate(struct Gate * gate, //array of gates
-                 unsigned int * counter,
+                 int * counter,
                  unsigned int * element1,
-                 unsigned int tap1,
+                 int tap1,
                  unsigned int * element2,
-                 unsigned int tap2,
+                 int tap2,
                  char type){
 
   if (*counter >= MAX_NUM_GATES){
@@ -52,11 +52,11 @@ void create_gate(struct Gate * gate, //array of gates
     new_gate.tap2 = tap2;
     new_gate.type = type;
     new_gate.out = 0;
-    new_gate.species = 'g';
+    new_gate.species = type;
 
     gate[*counter] = new_gate;
     *counter += 1;
-    printf("Made a gate!");
+    printf("Gate created.\n");
   }
 }
 
@@ -64,15 +64,11 @@ void create_gate(struct Gate * gate, //array of gates
 struct Logic_Module create_logic_module(unsigned int * reg,
                                         unsigned int reg_tap){
 
-  struct Gate array_of_gates[10];
   struct Logic_Module lm;
-  unsigned int zero = 0;
-
-  lm.array_of_gates = array_of_gates;
-  lm.counter = zero; // How many of the array locations are being used.
+  lm.counter = 0;
   lm.reg = reg;
   lm.reg_inlet_value = reg_tap;
-  lm.final_value = zero;
+  lm.final_value = 0;
 
   return lm;
 }
@@ -85,8 +81,16 @@ void compute_gate(struct Gate * a_gate){
   a_gate->out =  z;
 }
 
-void compute_gate_array(struct Gate * a_gate, unsigned int array_length){
+unsigned int compute_gate_array(struct Gate * a_gate, unsigned int array_length){
+  unsigned int temp_output;
   for (int i=0; i<array_length; i++){
     compute_gate(&a_gate[i]);
+    temp_output = a_gate[i].out;
   }
+  return temp_output;
+}
+
+void compute_logic_module(struct Logic_Module * LM){
+  LM->final_value = compute_gate_array(LM->array_of_gates, LM->counter);
+  *LM->reg = *LM->reg | LM->final_value<<LM->reg_inlet_value;
 }

@@ -12,27 +12,26 @@
 
 struct Gate{
   unsigned int * element1;
-  unsigned int tap1;
+  int tap1;
   unsigned int * element2;
-  unsigned int tap2;
+  int tap2;
   char type;
-  unsigned int out;
+  int out;
   char species;
 };
 
 struct Logic_Module{
-  struct Gate * array_of_gates;
-  unsigned int counter; // How many of the array locations are being used.
+  struct Gate array_of_gates[10];
+  int counter; // How many of the array locations are being used.
   unsigned int * reg;
-  unsigned int reg_inlet_value;
-  unsigned int final_value;
+  int reg_inlet_value;
+  int final_value;
 };
 
 typedef struct{
   unsigned int * reg_ptr;
-  struct Gate * gate_array_ptr;
-  unsigned int array_length;
   unsigned int * shift_speed_mod;
+  struct Logic_Module * LM;
 } paTestData2;
 
 struct data_for_interface{
@@ -42,9 +41,8 @@ struct data_for_interface{
   PaStream * stream1;
   int * running;
   unsigned int * reg;
-  struct Gate * array_gates;
   int * shift_speed_mod;
-  int * gate_counter;
+  struct Logic_Module * LM;
 };
 
 // Function Declarations -------------------------------------------------------
@@ -53,9 +51,9 @@ unsigned int get_bit(unsigned int, int);
 unsigned int operate(unsigned int, unsigned int, char);
 void shift_reg(unsigned int *, int);
 void print_gate_array(struct Gate *, int);
-void create_gate(struct Gate *, unsigned int *, unsigned int *,unsigned int, unsigned int *, unsigned int, char);
+void create_gate(struct Gate *, int *, unsigned int *, int, unsigned int *, int, char);
 void compute_gate(struct Gate *);
-void compute_gate_array(struct Gate *, unsigned int);
+unsigned int compute_gate_array(struct Gate *, unsigned int);
 struct Logic_Module create_logic_module(unsigned int *, unsigned int);
 
 static int patestCallback(const void *,
@@ -72,3 +70,4 @@ void quit(struct data_for_interface * the_data);
 void reg_reg(struct data_for_interface *);
 void reg_gate(struct data_for_interface *);
 void gate_gate(struct data_for_interface *);
+void compute_logic_module(struct Logic_Module *);

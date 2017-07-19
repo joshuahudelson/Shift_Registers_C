@@ -14,10 +14,18 @@ int main(void)
 {
   srand(time(NULL));
   unsigned int the_reg = rand();
-  unsigned int reg_inlet_value = 31;
+  int reg_inlet_value = 31;
 
   struct Logic_Module LM;
   LM = create_logic_module(&the_reg, reg_inlet_value);
+
+  create_gate(LM.array_of_gates,
+              &LM.counter,
+              LM.reg,
+              3,
+              LM.reg,
+              4,
+              'X');
 
   int running = 1;
   int stream_in_progress = 0;
@@ -27,11 +35,10 @@ int main(void)
   PaStreamParameters outputParameters;
   PaStream *stream1;
 
-  paTestData2 data1 = {.reg_ptr = &the_reg,
-                       .gate_array_ptr = LM.array_of_gates,
-                       .array_length = LM.counter,
-                       .shift_speed_mod = &shift_speed_mod,
-                     };
+  paTestData2 pa_data = {.reg_ptr = &the_reg,
+                         .shift_speed_mod = &shift_speed_mod,
+                         .LM = &LM
+                        };
 
   err = Pa_Initialize();
   //if( err != paNoError ) goto error;
@@ -55,23 +62,25 @@ int main(void)
           FRAMES_PER_BUFFER,
           paClipOff,      /* we won't output out of range samples so don't bother clipping them */
           patestCallback,
-          &data1 );
+          &pa_data);
 
-  struct data_for_interface the_data;
-  the_data.err = &err;
-  the_data.stream_in_progress = &stream_in_progress;
-  the_data.stream1 = stream1;
-  the_data.running = &running;
-  the_data.reg = &the_reg;
-  the_data.array_gates = LM.array_of_gates;
-  the_data.shift_speed_mod = &shift_speed_mod;
-  the_data.gate_counter = &LM.counter;
+  // get rid of array_gates and gate_counter and instead send just the LM.
+  struct data_for_interface interface_data;
+  interface_data.err = &err;
+  interface_data.stream_in_progress = &stream_in_progress;
+  interface_data.stream1 = stream1;
+  interface_data.running = &running;
+  interface_data.reg = &the_reg;
+  interface_data.shift_speed_mod = &shift_speed_mod;
+  interface_data.LM = &LM;
 
 
   while(running == 1){
-    prompt_user(&the_data);
+    prompt_user(&interface_data);
   }
 }
+
+//----------------CALLBACK FUNCTION---------------------------------------------
 
 static int patestCallback( const void *inputBuffer, void *outputBuffer,
 							unsigned long framesPerBuffer,
@@ -79,7 +88,7 @@ static int patestCallback( const void *inputBuffer, void *outputBuffer,
 							PaStreamCallbackFlags statusFlags,
 							void *userData )
 {
-		paTestData2 *data = (paTestData2*)userData;
+		paTestData2 * pa_data = (paTestData2*)userData;
 		float *out = (float*)outputBuffer;
 		int frameIndex;
 		(void) timeInfo; /* Prevent unused variable warnings. */
@@ -91,16 +100,12 @@ static int patestCallback( const void *inputBuffer, void *outputBuffer,
 
 		for( frameIndex=0; frameIndex<(int)framesPerBuffer; frameIndex++ )
 		{
+      compute_logic_module(pa_data->LM);
 
-			compute_gate_array(data->gate_array_ptr, data->array_length);
-
-			float final_bit = get_bit(*data->reg_ptr, 0);
+			float final_bit = get_bit(*pa_data->reg_ptr, 0);
 			if (final_bit == 0) {
 				final_bit = -1; // use full amplitude range
 			}
-
-
-				//float whole_int = (((float) *data->reg_ptr/4294967295) - 0.5) * 2.0;
 
 				/* Stereo - two channels. */
 				*out++ = final_bit;
@@ -111,8 +116,8 @@ static int patestCallback( const void *inputBuffer, void *outputBuffer,
 				if (framecount >= 44100){
 					framecount = 0;
 				}
-				if ((framecount % *data->shift_speed_mod) == 0){
-				shift_reg(data->reg_ptr, 1);
+				if ((framecount % *pa_data->shift_speed_mod) == 0){
+				shift_reg(pa_data->reg_ptr, 1);
 			}
 		}
 		return 0;

@@ -1,59 +1,68 @@
 #include "shift_shaper.h"
 
-int prompt_user(struct data_for_interface * the_data){
+int prompt_user(struct data_for_interface * interface_data){
   char input_string[10];
   printf("\n start, stop, add, less, more, speed, quit?");
   scanf("%s", input_string);
 
   if (strcmp(input_string, "start")==0){
-    start_the_stream(the_data);
+    start_the_stream(interface_data);
     }
   else if (strcmp(input_string, "stop")==0){
-    stop_the_stream(the_data);
+    stop_the_stream(interface_data);
   }
   else if (strcmp(input_string, "quit")==0){
-    stop_the_stream(the_data);
-    quit(the_data);
+    stop_the_stream(interface_data);
+    quit(interface_data);
   }
   else if (strcmp(input_string, "speed")==0){
-    *the_data->shift_speed_mod = 5;
+    *interface_data->shift_speed_mod = 5;
   }
   else if (strcmp(input_string, "rr")==0){
-    reg_reg(the_data);
+    printf("calling reg_reg...\n");
+    reg_reg(interface_data);
   }
   else if (strcmp(input_string, "rg")==0){
-    reg_gate(the_data);
+    printf("calling reg_gate...\n");
+    reg_gate(interface_data);
   }
   else if (strcmp(input_string, "gg")==0){
-    gate_gate(the_data);
+    printf("calling gate_gate...\n");
+    gate_gate(interface_data);
+  }
+  else if (strcmp(input_string, "show")==0){
+    for(int i=0; i<interface_data->LM->counter; i++){
+      printf("%i", i);
+    }
   }
 }
 
-void start_the_stream(struct data_for_interface * the_data){
-  if (*the_data->stream_in_progress == 1){
+void start_the_stream(struct data_for_interface * interface_data){
+  if (*interface_data->stream_in_progress == 1){
     printf("Error: Already playing!");
   }
   else{
-    *the_data->err = Pa_StartStream(the_data->stream1);
-    printf("Return/Error number: %i\n", *the_data->err);
-    *the_data->stream_in_progress = 1;
+    *interface_data->err = Pa_StartStream(interface_data->stream1);
+    printf("Return/Error number: %i\n", *interface_data->err);
+    *interface_data->stream_in_progress = 1;
   }
 }
 
-void stop_the_stream(struct data_for_interface * the_data){
-  if (*the_data->stream_in_progress == 1) {
-  *the_data->err = Pa_StopStream(the_data->stream1);
-  *the_data->stream_in_progress = 0;
+void stop_the_stream(struct data_for_interface * interface_data){
+  if (*interface_data->stream_in_progress == 1) {
+  *interface_data->err = Pa_StopStream(interface_data->stream1);
+  *interface_data->stream_in_progress = 0;
  }
 }
 
-void quit(struct data_for_interface * the_data){
-  Pa_CloseStream(the_data->stream1);
+void quit(struct data_for_interface * interface_data){
+  Pa_CloseStream(interface_data->stream1);
   Pa_Terminate();
-  *the_data->running = 0;
+  *interface_data->running = 0;
 }
 
-void reg_reg(struct data_for_interface * the_data){
+
+void reg_reg(struct data_for_interface * interface_data){
   unsigned int tap_one, tap_two;
   char gate_type;
 
@@ -64,58 +73,52 @@ void reg_reg(struct data_for_interface * the_data){
   printf("\nType of gate: ");
   scanf(" %c", &gate_type);
 
-  create_gate(the_data->array_gates,
-              the_data->gate_counter,
-              the_data->reg,
+  create_gate(interface_data->LM->array_of_gates,
+              &interface_data->LM->counter,
+              interface_data->reg,
               tap_one,
-              the_data->reg,
+              interface_data->reg,
               tap_two,
               gate_type);
-
-  *the_data->gate_counter++; // Make an increment function that checks overflow.
 }
 
-void reg_gate(struct data_for_interface * the_data){
+void reg_gate(struct data_for_interface * interface_data){
   unsigned int tap_one, tap_two;
   char gate_type;
-  printf("Why is this getting called?");
 
   printf("\nRegister tap: ");
   scanf("%i", &tap_one);
-  printf("\nGate tap: ");
+  printf("\nGate number: ");
   scanf("%i", &tap_two);
   printf("\nType of gate: ");
-  scanf("%c", &gate_type);
+  scanf(" %c", &gate_type);
 
-  create_gate(the_data->array_gates,
-              the_data->gate_counter,
-              the_data->reg,
+  create_gate(interface_data->LM->array_of_gates,
+              &interface_data->LM->counter,
+              interface_data->reg,
               tap_one,
-              &(the_data->array_gates[tap_two]),
+              &interface_data->LM->array_of_gates[tap_two].out,
               0,
               gate_type);
-
-  *the_data->gate_counter++; // Make an increment function that checks overflow.
 }
 
-void gate_gate(struct data_for_interface * the_data){
+
+void gate_gate(struct data_for_interface * interface_data){
   unsigned int tap_one, tap_two;
   char gate_type;
 
-  printf("\nFirst gate tap: ");
+  printf("\nFirst gate number: ");
   scanf("%i", &tap_one);
-  printf("\nSecond gate tap: ");
+  printf("\nSecond gate number: ");
   scanf("%i", &tap_two);
   printf("\nType of gate: ");
-  scanf("%c", &gate_type);
+  scanf(" %c", &gate_type);
 
-  create_gate(the_data->array_gates,
-              the_data->gate_counter,
-              the_data->array_gates + tap_one,
+  create_gate(interface_data->LM->array_of_gates,
+              &interface_data->LM->counter,
+              &interface_data->LM->array_of_gates[tap_one].out,
               0,
-              the_data->array_gates + tap_two,
+              &interface_data->LM->array_of_gates[tap_two].out,
               0,
               gate_type);
-
-  *the_data->gate_counter++; // Make an increment function that checks overflow.
 }
