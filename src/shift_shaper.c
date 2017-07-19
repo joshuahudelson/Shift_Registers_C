@@ -6,83 +6,57 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+#include <time.h>
+#include <stdlib.h>
 #include "shift_shaper.h"
 
 int main(void)
 {
-    struct Reg array_regs[10];
-    struct Gate array_gates[10];
-    struct Wire array_wires[10];
+  srand(time(NULL));
+  unsigned int the_reg = rand();
+  unsigned int reg_inlet_value = 31;
 
-    int reg_counter = 0;
-    int gate_counter = 0;
-    int wire_counter = 0;
+  struct Logic_Module LM;
+  LM = create_logic_module(&the_reg, reg_inlet_value);
 
-    unsigned int Reg1_inlet = 31;
+  int running = 1;
+  int stream_in_progress = 0;
+  int shift_speed_mod = 1;
 
-    int running = 1;
-    int stream_in_progress = 0;
+  PaError err;
+  PaStreamParameters outputParameters;
+  PaStream *stream1;
 
-    int shift_speed_mod = 1;
+  paTestData2 data1 = {.reg_ptr = &the_reg,
+                       .gate_array_ptr = LM.array_of_gates,
+                       .array_length = LM.counter,
+                       .shift_speed_mod = &shift_speed_mod,
+                     };
 
-    create_reg(array_regs,
-               28590,
-               &reg_counter);
+  err = Pa_Initialize();
+  //if( err != paNoError ) goto error;
 
-    create_gate(array_gates,
-                &gate_counter,
-                &array_regs[0].state,
-                0,
-                &array_regs[0].state,
-                1,
-                'X');
+  outputParameters.device = Pa_GetDefaultOutputDevice(); /* default output device */
+  if (outputParameters.device == paNoDevice) {
+    fprintf(stderr,"Error: No default output device.\n");
+    //goto error;
+  }
 
-    print_reg_and_gates(array_regs[0], array_gates, MAX_NUM_GATES);
-    print_gate(&array_gates[0], array_regs, array_gates);
+  outputParameters.channelCount = 2;       /* stereo output */
+  outputParameters.sampleFormat = paFloat32; /* 32 bit floating point output */
+  outputParameters.suggestedLatency = Pa_GetDeviceInfo( outputParameters.device )->defaultLowOutputLatency;
+  outputParameters.hostApiSpecificStreamInfo = NULL;
 
-    create_wire(array_wires,
-                &wire_counter,
-                &array_gates[0].out,
-                0,
-                &array_regs[0].state,
-                &Reg1_inlet);
+  err = Pa_OpenStream(
+          &stream1,
+          NULL, /* no input */
+          &outputParameters,
+          SAMPLE_RATE_1,
+          FRAMES_PER_BUFFER,
+          paClipOff,      /* we won't output out of range samples so don't bother clipping them */
+          patestCallback,
+          &data1 );
 
-    PaError err;
-    PaStreamParameters outputParameters;
-    PaStream *stream1;
-
-    paTestData2 data1 = {.reg_ptr = array_regs,
-                         .gate_array_ptr = array_gates,
-                         .array_length = gate_counter,
-                         .wire_ptr = &array_wires[0],
-                         .shift_speed_mod = &shift_speed_mod,
-                       };
-
-    err = Pa_Initialize();
-    //if( err != paNoError ) goto error;
-
-    outputParameters.device = Pa_GetDefaultOutputDevice(); /* default output device */
-    if (outputParameters.device == paNoDevice) {
-      fprintf(stderr,"Error: No default output device.\n");
-      //goto error;
-    }
-
-    outputParameters.channelCount = 2;       /* stereo output */
-    outputParameters.sampleFormat = paFloat32; /* 32 bit floating point output */
-    outputParameters.suggestedLatency = Pa_GetDeviceInfo( outputParameters.device )->defaultLowOutputLatency;
-    outputParameters.hostApiSpecificStreamInfo = NULL;
-
-    err = Pa_OpenStream(
-            &stream1,
-            NULL, /* no input */
-            &outputParameters,
-            SAMPLE_RATE_1,
-            FRAMES_PER_BUFFER,
-            paClipOff,      /* we won't output out of range samples so don't bother clipping them */
-            patestCallback,
-            &data1 );
-
-    //if( err != paNoError ) goto error;
 
 // Run Loop --------------------------------------------------------------------
 
@@ -91,14 +65,14 @@ int main(void)
   the_data.stream_in_progress = &stream_in_progress;
   the_data.stream1 = stream1;
   the_data.running = &running;
-  the_data.array_wires = array_wires;
-  the_data.array_regs = array_regs;
-  the_data.array_gates = array_gates;
+  the_data.reg = &the_reg;
+  the_data.array_gates = LM.array_of_gates;
   the_data.shift_speed_mod = &shift_speed_mod;
-  the_data.gate_counter = &gate_counter;
+  the_data.gate_counter = &LM.counter;
+
 
   while(running == 1){
-    prompt_user(&the_data, Pa_StartStream);
+    prompt_user(&the_data);
   }
 }
 
@@ -122,9 +96,8 @@ static int patestCallback( const void *inputBuffer, void *outputBuffer,
 		{
 
 			compute_gate_array(data->gate_array_ptr, data->array_length);
-			compute_wire(data->wire_ptr);
 
-			float final_bit = get_bit(data->reg_ptr->state, 0);
+			float final_bit = get_bit(*data->reg_ptr, 0);
 			if (final_bit == 0) {
 				final_bit = -1; // use full amplitude range
 			}
@@ -142,7 +115,7 @@ static int patestCallback( const void *inputBuffer, void *outputBuffer,
 					framecount = 0;
 				}
 				if ((framecount % *data->shift_speed_mod) == 0){
-				shift_reg(&data->reg_ptr->state, 1);
+				shift_reg(data->reg_ptr, 1);
 			}
 		}
 		return 0;

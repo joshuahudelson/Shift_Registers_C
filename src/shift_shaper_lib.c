@@ -27,37 +27,10 @@ void shift_reg(unsigned int * reg, int number){
   *reg = *reg>>number;
 }
 
-void print_bin(struct Reg reg){
-  for(int i=31; i>-1; i--){
-    unsigned int temp = reg.state>>i;
-    unsigned int temp2 = temp & 1;
-    printf("%i", temp2);
-  }
-}
-
 void print_gate_array(struct Gate * array_gates, int length){
   for (int i=0; i<length; i++){
     printf("%i", i);
   }
-}
-
-void print_reg_and_gates(struct Reg reg, struct Gate * array_gates, int length){
-  print_bin(reg);
-  printf("          ");
-  print_gate_array(array_gates, length);
-  printf("\n");
-}
-
-void create_reg(struct Reg * reg,
-                int initial_state,
-                int * counter){
-
-  struct Reg new_reg;
-  new_reg.state = initial_state;
-  new_reg.species = 'r';
-
-  reg[*counter] = new_reg;
-  *counter += 1;
 }
 
 void create_gate(struct Gate * gate, //array of gates
@@ -87,28 +60,23 @@ void create_gate(struct Gate * gate, //array of gates
   }
 }
 
-void create_wire(struct Wire * array_wires,
-                 int * counter,
-                 unsigned int * source,
-                 int tap_source,
-                 unsigned int * destination,
-                 int * tap_destination){
 
-if (*counter >= MAX_NUM_WIRES){
- printf("Maximum number of wires has been reached!");
-  }
-else{
-  struct Wire new_wire;
-  new_wire.source = source;
-  new_wire.tap_source = tap_source;
-  new_wire.destination = destination;
-  new_wire.tap_destination = tap_destination;
-  new_wire.species = 'w';
+struct Logic_Module create_logic_module(unsigned int * reg,
+                                        unsigned int reg_tap){
 
-  array_wires[*counter] = new_wire;
-  *counter += 1;
-  }
+  struct Gate array_of_gates[10];
+  struct Logic_Module lm;
+  unsigned int zero = 0;
+
+  lm.array_of_gates = array_of_gates;
+  lm.counter = zero; // How many of the array locations are being used.
+  lm.reg = reg;
+  lm.reg_inlet_value = reg_tap;
+  lm.final_value = zero;
+
+  return lm;
 }
+
 
 void compute_gate(struct Gate * a_gate){
   unsigned int x = get_bit(*a_gate->element1, a_gate->tap1);
@@ -116,6 +84,7 @@ void compute_gate(struct Gate * a_gate){
   unsigned int z = operate(x, y, a_gate->type);
   a_gate->out =  z;
 }
+
 
 void compute_wire(struct Wire * a_wire){
   unsigned int x = get_bit(*a_wire->source, 0);
@@ -128,44 +97,3 @@ void compute_gate_array(struct Gate * a_gate, unsigned int array_length){
     compute_gate(&a_gate[i]);
   }
 }
-
-void print_gate(struct Gate * gate,
-                struct Reg * array_regs,
-                struct Gate * array_gates){
-
-  unsigned int temp_source1;
-  unsigned int temp_source2;
-  // No, rethink this... draw on paper.  "reg" isn't a thing...
-  for (int i=0; i<MAX_NUM_GATES; i++){
-    if (&array_regs[i] == &gate->element1){
-      temp_source1 = i*31; // this is a placeholder, for when there will be more than one reg
-    }
-    if (&array_gates[i].out == &gate->element1){
-      temp_source1 = temp_source1 + 31 + (i * 10);
-    }
-    if (&array_regs[i] == &gate->element2){
-      temp_source2 = i*31; // this is a placeholder, for when there will be more than one reg
-    }
-    if (&array_gates[i].out == &gate->element2){
-      temp_source2 = temp_source2 + 31 + i;
-    }
-  }
-    // so now we have the starting location of the reg (0) and the gate (31)
-    // so we can put the links | at some number plus reg or temp_source 2 (31 plus gate num)
-    temp_source1 += gate->tap1;
-    temp_source2 += gate->tap2;
-
-    for (int i=50; i>-1; i--){ // the problem is the organization: 31..0, and then 0..9
-      if ((temp_source1 == i) | (temp_source2 == i)){
-        printf("|");
-      }
-      else {
-        printf(" ");
-      }
-      }
-      }
-
-/* This routine will be called by the PortAudio engine when audio is needed.
- ** It may called at interrupt level on some machines so don't do anything
- ** that could mess up the system like calling malloc() or free().
- */
