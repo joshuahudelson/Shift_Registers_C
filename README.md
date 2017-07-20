@@ -1,4 +1,4 @@
-# Shift_Registers_C
+# Shiftshaper
 Linear Feedback Shift Register simulation for sound synthesis.
 
 Linear Feedback Shift Registers are a mainstay of cryptography.  Certain feedback arrays (based on primitive polynomials) generate the full range of states for an n-bit register.  More interesting--for musical purposes--are arrangements that produce shorter repetitive patterns.
