@@ -19,6 +19,7 @@ int main(void)
   struct Logic_Module LM;
   LM = create_logic_module(&the_reg, reg_inlet_value);
 
+/*
   create_gate(LM.array_of_gates,
               &LM.counter,
               LM.reg,
@@ -26,7 +27,10 @@ int main(void)
               LM.reg,
               4,
               'X',
-              'r');
+              'r',
+               0,
+               0);
+*/
 
   int running = 1;
   int stream_in_progress = 0;

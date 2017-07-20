@@ -5,12 +5,11 @@
 int prompt_user(struct data_for_interface * interface_data){
   char input_string[10];
   print_reg_and_gates(interface_data->LM, interface_data->reg);
-  printf("\n start, stop, r/b/g, show, move, speed, jumpstart, quit?  ");
+  printf("\n start, stop, r/b/g, show, move, speed, jump, quit?  ");
   scanf("%s", input_string);
 
   if (strcmp(input_string, "start")==0){
     start_the_stream(interface_data);
-    print_reg_and_gates(interface_data->LM, interface_data->reg);
     }
   else if (strcmp(input_string, "stop")==0){
     stop_the_stream(interface_data);
@@ -24,27 +23,21 @@ int prompt_user(struct data_for_interface * interface_data){
   }
   else if (strcmp(input_string, "r")==0){
     reg_reg(interface_data, input_string[0]);
-    print_reg_and_gates(interface_data->LM, interface_data->reg);
   }
   else if (strcmp(input_string, "b")==0){
     reg_gate(interface_data, input_string[0]);
-    print_reg_and_gates(interface_data->LM, interface_data->reg);
   }
   else if (strcmp(input_string, "g")==0){
     gate_gate(interface_data, input_string[0]);
-    print_reg_and_gates(interface_data->LM, interface_data->reg);
   }
   else if (strcmp(input_string, "show")==0){
     printf("\n");
-    print_reg_and_gates(interface_data->LM, interface_data->reg);
     }
   else if (strcmp(input_string, "move")==0){
     move_inlet(interface_data->LM);
-    print_reg_and_gates(interface_data->LM, interface_data->reg);
   }
-  else if (strcmp(input_string, "jumpstart")==0){
-    jumpstart(interface_data->reg);
-    print_reg_and_gates(interface_data->LM, interface_data->reg);
+  else if (strcmp(input_string, "jump")==0){
+    jump(interface_data->reg);
   }
 }
 
@@ -55,7 +48,7 @@ void shift_speed(float * shift_speed_mod){
   *shift_speed_mod = temp_amount;
 }
 
-void jumpstart(unsigned int * reg){
+void jump(unsigned int * reg){
   srand(time(NULL));
   *reg = rand();
 }
@@ -73,7 +66,7 @@ void start_the_stream(struct data_for_interface * interface_data){
   }
   else{
     *interface_data->err = Pa_StartStream(interface_data->stream1);
-    printf("Return/Error number: %i\n", *interface_data->err);
+    //printf("Return/Error number: %i\n", *interface_data->err);
     *interface_data->stream_in_progress = 1;
   }
 }
@@ -110,7 +103,9 @@ void reg_reg(struct data_for_interface * interface_data, char species){
               interface_data->reg,
               tap_two,
               gate_type,
-              species);
+              species,
+              0,
+              0);
 }
 
 void reg_gate(struct data_for_interface * interface_data, char species){
@@ -131,7 +126,9 @@ void reg_gate(struct data_for_interface * interface_data, char species){
               &interface_data->LM->array_of_gates[tap_two].out,
               0,
               gate_type,
-              species);
+              species,
+              tap_two,
+              0);
 }
 
 
@@ -153,5 +150,7 @@ void gate_gate(struct data_for_interface * interface_data, char species){
               &interface_data->LM->array_of_gates[tap_two].out,
               0,
               gate_type,
-              species);
+              species,
+              tap_one,
+              tap_two);
 }
